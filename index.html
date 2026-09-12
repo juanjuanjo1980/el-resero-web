@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El Resero</title>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app-shell" id="appShell" hidden>
+  <aside class="sidebar">
+    <div class="brand">El Resero<small>Control de gestión</small></div>
+    <nav id="nav"></nav>
+    <div class="sidebar-foot">
+      <div id="roleBadge">Conectando…</div>
+      <div class="current-user" id="currentUserBadge" style="margin-top:10px;"></div>
+    </div>
+  </aside>
+  <main class="content">
+    <div class="topbar">
+      <h1 id="pageTitle">Panel</h1>
+      <div class="topbar-sub" id="pageSub"></div>
+    </div>
+    <div id="bannerArea"></div>
+    <section id="sec-panel" class="section"></section>
+    <section id="sec-ventas" class="section" hidden></section>
+    <section id="sec-stock" class="section" hidden></section>
+    <section id="sec-clientes" class="section" hidden></section>
+    <section id="sec-estadisticas" class="section" hidden></section>
+    <section id="sec-finanzas" class="section" hidden></section>
+    <section id="sec-bancos" class="section" hidden></section>
+    <section id="sec-config" class="section" hidden></section>
+  </main>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<!-- pantalla de login / registro / cuenta pendiente -->
+<div class="user-gate" id="authGate"><div class="user-gate-card" id="authGateCard"></div></div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
