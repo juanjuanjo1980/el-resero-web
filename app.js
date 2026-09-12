@@ -1097,7 +1097,7 @@
             '<div class="field"><label for="gastoFecha">Fecha</label><input id="gastoFecha" type="date" value="'+todayISO()+'"></div>'+
             '<div class="field grow"><label for="gastoConcepto">Concepto</label><input id="gastoConcepto" required></div>'+
             '<div class="field"><label for="gastoCategoria">Categoría</label><select id="gastoCategoria">'+
-              '<option>Alquiler</option><option>Servicios</option><option>Marketing</option><option>Mantenimiento</option><option>Impuestos</option><option>Otros</option></select></div>'+
+              '<option>Alquiler</option><option>Servicios (luz, agua, internet)</option><option>Logística</option><option>Packaging e insumos</option><option>Instalaciones y equipamiento</option><option>Trámites y documentación</option><option>Marketing</option><option>Mantenimiento</option><option>Impuestos</option><option>Otros</option></select></div>'+
             '<div class="field"><label for="gastoMonto">Monto</label><input id="gastoMonto" type="number" min="0" step="1" required></div>'+
             '<div class="field"><button type="submit" class="btn btn-primary">Registrar</button></div>'+
           '</div>'+
