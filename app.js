@@ -434,9 +434,10 @@
       : '<strong>Vista operativa</strong>Ventas y stock. Las finanzas no están disponibles con tu acceso.';
   }
   function renderCurrentUserBadge(){
-    var el=$('#currentUserBadge');
-    if(!el || !APP.profile) return;
-    el.innerHTML = '<strong>'+esc(APP.profile.nombre)+'</strong><a onclick="ElResero.cerrarSesion()">Cerrar sesión</a>';
+    if(!APP.profile) return;
+    var html = '<strong>'+esc(APP.profile.nombre)+' · '+(APP.isAdmin?'Admin':'Empleado')+'</strong><a onclick="ElResero.cerrarSesion()">Cerrar sesión</a>';
+    var el1=$('#currentUserBadge'); if(el1) el1.innerHTML = html;
+    var el2=$('#topbarUserBadge'); if(el2) el2.innerHTML = html;
   }
 
   // ============================================================
