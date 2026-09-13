@@ -1059,6 +1059,26 @@
   // FINANZAS (admin)
   // ============================================================
 
+  function opcionesQuienPago(seleccionado){
+    var socios=((APP.config&&APP.config.socios)||[]).filter(function(s){ return s&&s.nombre; });
+    var opciones=['Caja del negocio'].concat(socios.map(function(s){ return s.nombre; }));
+    return opciones.map(function(o){ return '<option'+(o===seleccionado?' selected':'')+'>'+esc(o)+'</option>'; }).join('');
+  }
+
+  function aportesDeSocios(gastos){
+    var porSocio={};
+    gastos.forEach(function(g){
+      var pagador=g.pagado_por||'Caja del negocio';
+      if(pagador==='Caja del negocio') return;
+      porSocio[pagador]=(porSocio[pagador]||0)+(Number(g.monto)||0);
+    });
+    var nombres=Object.keys(porSocio);
+    if(!nombres.length) return '';
+    return '<div class="banner banner-info" style="margin-top:14px;">Plata que salió del bolsillo de cada socio este período (a devolver): '+
+      nombres.map(function(n){ return '<strong>'+esc(n)+'</strong>: '+fmtMoney(porSocio[n]); }).join(' · ')+
+    '</div>';
+  }
+
   function renderFinanzas(){
     var period=APP.finPeriod;
     var liq=computeLiquidacion(period);
@@ -1099,13 +1119,18 @@
             '<div class="field"><label for="gastoCategoria">Categoría</label><select id="gastoCategoria">'+
               '<option>Alquiler</option><option>Servicios (luz, agua, internet)</option><option>Logística</option><option>Packaging e insumos</option><option>Instalaciones y equipamiento</option><option>Trámites y documentación</option><option>Marketing</option><option>Mantenimiento</option><option>Impuestos</option><option>Otros</option></select></div>'+
             '<div class="field"><label for="gastoMonto">Monto</label><input id="gastoMonto" type="number" min="0" step="1" required></div>'+
+          '</div>'+
+          '<div class="form-row" style="margin-top:10px;">'+
+            '<div class="field"><label for="gastoPagadoPor">¿Quién pagó?</label><select id="gastoPagadoPor">'+opcionesQuienPago('Caja del negocio')+'</select></div>'+
             '<div class="field"><button type="submit" class="btn btn-primary">Registrar</button></div>'+
           '</div>'+
+          '<div class="hint" style="color:var(--ink-muted); font-size:12px; margin-top:8px;">Si lo pagó un socio de su bolsillo (no de la caja del negocio), elegilo acá para llevar la cuenta de lo que hay que devolverle.</div>'+
         '</form>'+
       '</div>'+
+      aportesDeSocios(gastos)+
       '<div class="section-title">Gastos · '+periodLabel(period)+'<span></span></div>'+
-      '<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th class="num">Monto</th><th></th></tr></thead><tbody>'+
-        (gastos.length ? gastos.map(rowGasto).join('') : '<tr class="empty-row"><td colspan="5">Sin gastos registrados en este período.</td></tr>')+
+      '<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Pagó</th><th class="num">Monto</th><th></th></tr></thead><tbody>'+
+        (gastos.length ? gastos.map(rowGasto).join('') : '<tr class="empty-row"><td colspan="6">Sin gastos registrados en este período.</td></tr>')+
       '</tbody></table></div>';
 
     $('#finPeriod-input').onchange=function(){ APP.finPeriod=this.value; renderFinanzas(); };
@@ -1130,7 +1155,7 @@
     var accion = APP.confirming[key]
       ? '<button class="btn btn-danger btn-small" onclick="ElResero.borrarGasto(\''+g.id+'\')">Confirmar</button> <button class="btn btn-small" onclick="ElResero.cancelConfirm(\''+key+'\')">No</button>'
       : '<button class="btn btn-small" onclick="ElResero.askConfirm(\''+key+'\')">Eliminar</button>';
-    return '<tr><td>'+esc(g.fecha)+'</td><td>'+esc(g.concepto)+'</td><td>'+esc(g.categoria)+'</td><td class="num">'+fmtMoney(g.monto)+'</td><td>'+accion+'</td></tr>';
+    return '<tr><td>'+esc(g.fecha)+'</td><td>'+esc(g.concepto)+'</td><td>'+esc(g.categoria)+'</td><td>'+esc(g.pagado_por||'Caja del negocio')+'</td><td class="num">'+fmtMoney(g.monto)+'</td><td>'+accion+'</td></tr>';
   }
 
   async function agregarGasto(e){
@@ -1138,6 +1163,7 @@
     var data={
       fecha:$('#gastoFecha').value||todayISO(), concepto:$('#gastoConcepto').value.trim(),
       categoria:$('#gastoCategoria').value, monto:parseFloat($('#gastoMonto').value)||0,
+      pagado_por:$('#gastoPagadoPor').value||'Caja del negocio',
       registrado_por:APP.profile.id
     };
     if(!data.concepto || !data.monto) return toast('Completá concepto y monto.', 'danger');
