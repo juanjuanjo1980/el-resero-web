@@ -599,13 +599,21 @@
             '<div class="field"><label>Total</label><div class="mono" id="ventaTotalPreview" style="padding:8px 0; font-weight:600;">$0</div></div>'+
             '<div class="field"><button type="submit" class="btn btn-primary">Registrar venta</button></div>'+
           '</div>'+
+          '<div class="form-row" style="margin-top:10px;">'+
+            '<div class="field"><label for="ventaMedioPago">Medio de pago</label><select id="ventaMedioPago">'+
+              '<option>Efectivo</option><option>Tarjeta de crédito</option><option>Transferencia</option><option>QR</option>'+
+            '</select></div>'+
+            '<div class="field"><label for="ventaEstadoPago">Estado del pago</label><select id="ventaEstadoPago">'+
+              '<option>Pagado</option><option>Pendiente</option>'+
+            '</select></div>'+
+          '</div>'+
           '<div class="hint" style="color:var(--ink-muted); font-size:12px; margin-top:8px;">Queda registrada a nombre de <strong style="color:var(--ink);">'+esc(APP.profile.nombre)+'</strong>.</div>'+
           '<div class="field-error" id="ventaError" hidden></div>'+
         '</form>'+
       '</div>'+
       '<div class="section-title">Ventas recientes<span></span></div>'+
-      '<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Canal</th><th>Cliente</th><th class="num">Kg</th><th class="num">Total</th><th>Origen (lote)</th><th>Registró</th><th>Estado</th><th></th></tr></thead><tbody>'+
-        (recientes.length ? recientes.map(rowVenta).join('') : '<tr class="empty-row"><td colspan="10">Todavía no hay ventas registradas.</td></tr>')+
+      '<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Canal</th><th>Cliente</th><th class="num">Kg</th><th class="num">Total</th><th>Origen (lote)</th><th>Registró</th><th>Pedido</th><th>Pago</th><th>Estado</th><th></th></tr></thead><tbody>'+
+        (recientes.length ? recientes.map(rowVenta).join('') : '<tr class="empty-row"><td colspan="12">Todavía no hay ventas registradas.</td></tr>')+
       '</tbody></table></div>';
 
     function actualizarLotes(){
@@ -640,9 +648,23 @@
         : '<button class="btn btn-small" onclick="ElResero.askConfirm(\''+key+'\')">Anular</button>';
     }
     var origen = v.lote_codigo || v.lote_proveedor ? (esc(v.lote_codigo||'—')+(v.lote_proveedor?' · '+esc(v.lote_proveedor):'')) : '—';
+    var estadosPedido=['Ingresado','En preparación','Enviado','Recibido'];
+    var pedidoActual = v.estado_pedido || 'Ingresado';
+    var celdaPedido = v.anulada ? esc(pedidoActual) :
+      '<select style="font-size:11px;" onchange="ElResero.cambiarEstadoPedido(\''+v.id+'\', this.value)">'+
+        estadosPedido.map(function(e){ return '<option'+(e===pedidoActual?' selected':'')+'>'+e+'</option>'; }).join('')+
+      '</select>';
+    var estadosPago=['Pagado','Pendiente'];
+    var pagoActual = v.estado_pago || 'Pagado';
+    var badgeClassPago = pagoActual==='Pendiente' ? 'badge-warn' : 'badge-ok';
+    var celdaPago = '<div>'+esc(v.medio_pago||'Efectivo')+'</div>'+
+      (v.anulada ? '<span class="badge '+badgeClassPago+'">'+esc(pagoActual)+'</span>' :
+        '<select style="font-size:11px; margin-top:2px;" onchange="ElResero.cambiarEstadoPago(\''+v.id+'\', this.value)">'+
+          estadosPago.map(function(e){ return '<option'+(e===pagoActual?' selected':'')+'>'+e+'</option>'; }).join('')+
+        '</select>');
     return '<tr><td>'+esc(v.fecha)+'</td><td>'+esc(v.producto_nombre)+'</td><td>'+esc(v.canal)+'</td><td>'+esc(v.cliente_nombre)+
       '</td><td class="num">'+fmtKg(v.cantidad_kg)+'</td><td class="num">'+fmtMoney(v.total)+'</td><td>'+origen+'</td><td>'+esc(nombrePorId(v.registrado_por))+
-      '</td><td>'+estado+'</td><td>'+accion+'</td></tr>';
+      '</td><td>'+celdaPedido+'</td><td>'+celdaPago+'</td><td>'+estado+'</td><td>'+accion+'</td></tr>';
   }
 
   async function registrarVenta(e){
@@ -670,7 +692,8 @@
         producto_id:productoId, producto_nombre:producto.nombre,
         cantidad_kg:cantidad, precio_unitario:precio, costo_unitario:Number(producto.costo_kg)||0,
         total:total, registrado_por:APP.profile.id, anulada:false,
-        lote_id:loteId, lote_proveedor:lote?(lote.proveedor||''):'', lote_codigo:lote?(lote.codigo_lote||''):''
+        lote_id:loteId, lote_proveedor:lote?(lote.proveedor||''):'', lote_codigo:lote?(lote.codigo_lote||''):'',
+        estado_pedido:'Ingresado', medio_pago:$('#ventaMedioPago').value||'Efectivo', estado_pago:$('#ventaEstadoPago').value||'Pagado'
       });
       if(res.error) throw res.error;
       toast('Venta registrada: '+fmtMoney(total), 'ok');
@@ -688,6 +711,22 @@
     }catch(e){ toast('No se pudo anular la venta.', 'danger'); }
     delete APP.confirming['venta:'+id];
     renderSection(APP.currentSection);
+  }
+
+  async function cambiarEstadoPedido(id, estado){
+    try{
+      var res = await supabase.from('ventas').update({estado_pedido:estado}).eq('id', id);
+      if(res.error) throw res.error;
+      toast('Estado del pedido actualizado.', 'ok'); await reload(); renderSection(APP.currentSection);
+    }catch(e){ toast('No se pudo actualizar el estado del pedido.', 'danger'); }
+  }
+
+  async function cambiarEstadoPago(id, estado){
+    try{
+      var res = await supabase.from('ventas').update({estado_pago:estado}).eq('id', id);
+      if(res.error) throw res.error;
+      toast('Estado del pago actualizado.', 'ok'); await reload(); renderSection(APP.currentSection);
+    }catch(e){ toast('No se pudo actualizar el estado del pago.', 'danger'); }
   }
 
   // ============================================================
@@ -1531,7 +1570,8 @@
 
   window.ElResero = {
     showSection:showSection, askConfirm:askConfirm, cancelConfirm:cancelConfirm,
-    anularVenta:anularVenta, editarProducto:editarProducto, cancelarEdicionProducto:cancelarEdicionProducto,
+    anularVenta:anularVenta, cambiarEstadoPedido:cambiarEstadoPedido, cambiarEstadoPago:cambiarEstadoPago,
+    editarProducto:editarProducto, cancelarEdicionProducto:cancelarEdicionProducto,
     borrarGasto:borrarGasto, editarInversion:editarInversion, cancelarEdicionInv:cancelarEdicionInv,
     toggleHistorialInv:toggleHistorialInv,
     borrarInversion:borrarInversion, cambiarEstadoCheque:cambiarEstadoCheque, borrarCheque:borrarCheque,
